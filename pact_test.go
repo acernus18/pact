@@ -14,5 +14,8 @@ func TestDispatcher(t *testing.T) {
 
 	http.HandleFunc("/test/{resource}/{action}", dispatcher.Dispatch())
 
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		return
+	}
 }
