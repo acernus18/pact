@@ -62,8 +62,11 @@ func (dispatcher *Dispatcher) Dispatch() func(w http.ResponseWriter, r *http.Req
 		response, err := responder(string(payload))
 		if err != nil {
 			writeError(w, err)
+			// [BugFix]: didnt return after writeError
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		if e := json.NewEncoder(w).Encode(Response[any]{
 			Code: 0, Message: "SUC", Data: response,
 		}); e != nil {

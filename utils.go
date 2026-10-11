@@ -8,8 +8,9 @@ import (
 )
 
 func writeSystemError(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusOK)
+	// [BugFix]: add header before write
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(Response[any]{Code: -1, Message: "System Error", Data: nil})
 }
 
@@ -18,8 +19,9 @@ func writeError(w http.ResponseWriter, err error) {
 	if len(elems) == 2 {
 		code, e := strconv.Atoi(elems[0])
 		if e == nil {
-			w.WriteHeader(http.StatusOK)
+			// [BugFix]: add header before write
 			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(Response[any]{
 				Code:    code,
 				Message: elems[1],
@@ -28,5 +30,8 @@ func writeError(w http.ResponseWriter, err error) {
 		} else {
 			writeSystemError(w)
 		}
+	} else {
+		// [BugFix]: return system error if Error format is not correct
+		writeSystemError(w)
 	}
 }
