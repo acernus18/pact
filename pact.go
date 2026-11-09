@@ -118,14 +118,12 @@ func ParsePayload[T any](message string) (Payload[T], error) {
 
 // Database Utils
 
-type IScanner interface {
+type IScanner[T any] interface {
+	*T
 	Scan(rows *sql.Rows) error
 }
 
-func Query[T any, PT interface {
-	*T
-	IScanner
-}](db *sql.DB, stmt string, args ...any) ([]T, error) {
+func Query[T any, PT IScanner[T]](db *sql.DB, stmt string, args ...any) ([]T, error) {
 	rows, queryErr := db.Query(stmt, args...)
 	if queryErr != nil {
 		return nil, queryErr
