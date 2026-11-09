@@ -1,8 +1,10 @@
 package pact
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -112,4 +114,35 @@ func ParsePayload[T any](message string) (Payload[T], error) {
 	var result Payload[T]
 	err := json.Unmarshal([]byte(message), &result)
 	return result, err
+}
+
+// Database Utils
+
+type IScanner interface {
+	Scan(rows *sql.Rows) error
+}
+
+func Query[T any, PT interface {
+	*T
+	IScanner
+}](db *sql.DB, stmt string, args ...any) ([]T, error) {
+	rows, queryErr := db.Query(stmt, args...)
+	if queryErr != nil {
+		return nil, queryErr
+	}
+	defer Close(rows, func(e error) {
+		log.Printf("Error closing rows - %s : %v", stmt, e)
+	})
+	result := make([]T, 0)
+	for rows.Next() {
+		var item T
+		if err := PT(&item).Scan(rows); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
