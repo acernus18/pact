@@ -3,6 +3,7 @@ package pact
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -143,4 +144,23 @@ func Query[T any, PT IScanner[T]](db *sql.DB, stmt string, args ...any) ([]T, er
 		return nil, err
 	}
 	return result, nil
+}
+
+func Transaction(db *sql.DB, executor func(tx *sql.Tx) error) error {
+	transaction, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		rollbackErr := transaction.Rollback()
+		if rollbackErr != nil {
+			if !errors.Is(rollbackErr, sql.ErrTxDone) {
+				log.Println("Transaction Rollback Error:", rollbackErr)
+			}
+		}
+	}()
+	if txErr := executor(transaction); txErr != nil {
+		return txErr
+	}
+	return transaction.Commit()
 }
